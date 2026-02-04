@@ -1,4 +1,4 @@
-MODULE version_data
+MODULE versioning
 
 USE globals
 
@@ -17,7 +17,7 @@ IMPLICIT NONE
     character(len=100) :: date_time_str
 
 CONTAINS
-    SUBROUTINE write_version_data()
+    SUBROUTINE version_data()
         CALL DATE_AND_TIME(DATE=date_str, TIME=time_str)
 
         year_str = date_str(1:4)
@@ -36,6 +36,6 @@ CONTAINS
         call writeout("Author    : "//author_name)
         call writeout(date_time_str)
 
-    end SUBROUTINE write_version_data
+    END SUBROUTINE version_data
 
-END MODULE version_data
+END MODULE versioning
