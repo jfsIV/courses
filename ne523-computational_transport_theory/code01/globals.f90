@@ -2,14 +2,14 @@ MODULE globals
 IMPLICIT NONE
 
 ! I/O
-character(*), parameter :: output_file = "output.txt"
-character(*), parameter :: input_file  = "sample.i"
+character(len=*), parameter :: output_file = "output.txt"
+character(len=*), parameter :: input_file  = "sample.i"
 integer, parameter :: output_unit = 99
 integer, parameter :: input_unit  = 98
 
 ! input data
 integer :: n_x_cells, n_y_cells, angles_per_octant, n_materials
-real, dimension(:), allocatable :: x_cells_sizes, y_cell_sizes
+real, dimension(:), allocatable :: x_cell_sizes, y_cell_sizes
 real, dimension(:,:), allocatable :: angular_quadrature, cross_sections
 integer, dimension(4) :: boundary_conditions
 integer, dimension(:, :), allocatable :: material_array
@@ -38,4 +38,10 @@ SUBROUTINE writeout(output)
     close(unit=output_unit)
 
 END SUBROUTINE writeout
+
+SUBROUTINE throw_error(errmsg)
+    character(len=*), intent(in)
+
+END SUBROUTINE throw_error
+
 END MODULE globals

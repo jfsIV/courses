@@ -9,7 +9,8 @@ IMPLICIT NONE
     close(output_unit)
     
     CALL version_data()
-    CALL input_data()
 
+    CALL input_data()
+    CALL input_check()
 
 END PROGRAM sn_2d
