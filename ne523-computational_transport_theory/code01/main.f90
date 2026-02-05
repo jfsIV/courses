@@ -12,5 +12,6 @@ IMPLICIT NONE
 
     CALL input_data()
     CALL input_check()
+    CALL input_echo()
 
 END PROGRAM sn_2d

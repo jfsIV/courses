@@ -18,6 +18,7 @@ real, dimension(:, :), allocatable :: source_array
 
 CONTAINS
 SUBROUTINE writeout(output)
+    ! this only works for monotyped arguments and automatically writes a new line
     class(*) :: output
 
     open(unit=output_unit, file=output_file, status="old", position="append") 
@@ -40,7 +41,14 @@ SUBROUTINE writeout(output)
 END SUBROUTINE writeout
 
 SUBROUTINE throw_error(errmsg)
-    character(len=*), intent(in)
+    character(len=*), intent(in) :: errmsg
+
+    print*, "--------------------------------------------------"
+    print*, "|           A FATAL ERROR HAS OCCURED            |"
+    print*, "--------------------------------------------------"
+    print*, errmsg
+    print*, "Terminating the program"
+    STOP
 
 END SUBROUTINE throw_error
 
