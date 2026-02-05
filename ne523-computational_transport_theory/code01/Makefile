@@ -1,12 +1,14 @@
 FC := gfortran
 FCFLAGS := -c -O2
 BUILD_DIR := build
+SRC_DIR := src
 
-SRCS := main.f90 \
+FILES := main.f90 \
 		globals.f90 \
 		versioning.f90 \
 		input.f90
-OBJS := $(SRCS:%.f90=$(BUILD_DIR)/%.o)
+
+OBJS := $(FILES:%.f90=$(BUILD_DIR)/%.o)
 PROGRAM := sn_2d
 
 
@@ -17,7 +19,7 @@ $(PROGRAM): $(OBJS)
 	@$(FC) -o $@ $^
 
 # compile
-$(BUILD_DIR)/%.o: %.f90 | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.f90 | $(BUILD_DIR)
 	@$(FC) $(FCFLAGS) -J$(BUILD_DIR) -I$(BUILD_DIR) -o $@ $<
 
 $(BUILD_DIR):
