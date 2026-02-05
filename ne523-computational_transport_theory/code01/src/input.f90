@@ -154,7 +154,7 @@ SUBROUTINE validate_angular_quadrature()
     do j = 1, angles_per_octant 
         do i = 1, 3
             call check_nonnegative(angular_quadrature(i,j))
-            if (angular_quadrature(i,j) > 1.57079) then
+            if (angular_quadrature(i,j) > 1) then
                 call throw_error("Quadrature point cannot be > pi/2")
             end if
         end do

@@ -3,6 +3,7 @@ PROGRAM sn_2d
 USE versioning
 USE globals
 USE input
+USE solver
 
 IMPLICIT NONE
 
@@ -37,5 +38,7 @@ CALL version_data()
 CALL input_data()
 CALL input_check()
 CALL input_echo()
+
+CALL transport_solver()
 
 END PROGRAM sn_2d

@@ -6,7 +6,8 @@ SRC_DIR := src
 FILES := main.f90 \
 		globals.f90 \
 		versioning.f90 \
-		input.f90
+		input.f90 \
+		solver.f90
 
 OBJS := $(FILES:%.f90=$(BUILD_DIR)/%.o)
 PROGRAM := sn_2d
@@ -29,7 +30,8 @@ $(BUILD_DIR):
 $(BUILD_DIR)/main.o: \
 	$(BUILD_DIR)/versioning.o \
 	$(BUILD_DIR)/globals.o \
-	$(BUILD_DIR)/input.o
+	$(BUILD_DIR)/input.o \
+	$(BUILD_DIR)/solver.o
 
 $(BUILD_DIR)/versioning.o: \
 	$(BUILD_DIR)/globals.o
