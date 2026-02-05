@@ -2,8 +2,8 @@ MODULE globals
 IMPLICIT NONE
 
 ! I/O
-character(len=*), parameter :: output_file = "output.txt"
-character(len=*), parameter :: input_file  = "sample.i"
+character(len=*), parameter :: output_file = "output.out"
+character(len=64) :: input_file
 integer, parameter :: output_unit = 99
 integer, parameter :: input_unit  = 98
 
