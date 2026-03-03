@@ -16,6 +16,7 @@ IMPLICIT NONE
 
     character(len=100) :: date_time_str
 
+
 CONTAINS
     SUBROUTINE version_data()
         CALL DATE_AND_TIME(DATE=date_str, TIME=time_str)
@@ -37,5 +38,26 @@ CONTAINS
         call writeout(date_time_str)
 
     END SUBROUTINE version_data
+
+
+    SUBROUTINE update_runtime(runtime)
+        real, intent(in) :: runtime
+        character(len=32) :: str_runtime
+        logical :: is_open
+
+        inquire(output_unit, opened=is_open)
+
+        if (.not. is_open) then
+            open(output_unit, file=output_file, status="old", &
+                position="append", action="write")
+        end if
+
+        write(str_runtime, '(A, F10.4, A)') "Runtime   : ", runtime, " [s]"
+        call writeout("")
+        call writeout(str_runtime)
+
+        flush(output_unit)
+
+    END SUBROUTINE update_runtime
 
 END MODULE versioning

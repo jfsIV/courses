@@ -1,7 +1,7 @@
 Code Name : sn_2d
 Version   : v0.1.0
 Author    : Joseph F. Specht IV
-Executed  : 13:58:38 on 02/05/2026
+Executed  : 18:55:40 on 03/03/2026
 
 Discrete Ordinates/Octant
   n      mu     eta       w
@@ -113,3 +113,5 @@ Computational Cell Data
   8 10  1  0.1000  0.2000  1.0000  0.5000  0.0000
   9 10  1  0.1000  0.2000  1.0000  0.5000  0.0000
  10 10  1  0.1000  0.2000  1.0000  0.5000  0.0000
+
+Runtime   :     0.0010 [s]

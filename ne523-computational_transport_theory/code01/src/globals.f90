@@ -18,10 +18,8 @@ real, dimension(:, :), allocatable :: source_array
 
 CONTAINS
 SUBROUTINE writeout(output)
-    ! this only works for monotyped arguments and automatically writes a new line
+! this only works for monotyped arguments and automatically writes a new line
     class(*) :: output
-
-    open(unit=output_unit, file=output_file, status="old", position="append") 
 
     select type (output)
     type is (character(*))
@@ -35,9 +33,6 @@ SUBROUTINE writeout(output)
     type is (logical)
         write(output_unit, *) output
     end select
-
-    close(unit=output_unit)
-
 END SUBROUTINE writeout
 
 SUBROUTINE throw_error(errmsg)

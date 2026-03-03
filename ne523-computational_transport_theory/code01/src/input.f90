@@ -80,9 +80,9 @@ SUBROUTINE check_positive(var)
 
     select type (var)
     type is (integer)
-        if (var < 0) call throw_error("encountered a non-positive value")
+        if (var <= 0) call throw_error("encountered a non-positive value")
     type is (real)
-        if (var < 0) call throw_error("encountered a non-positive value")
+        if (var <= 0) call throw_error("encountered a non-positive value")
     class default
         call throw_error("non-float/real variable encountered")
     end select
@@ -235,7 +235,7 @@ SUBROUTINE validate_source_assignment()
     print*, "Validating source assignment"
     do j = 1, n_y_cells
         do i = 1, n_x_cells
-            call check_positive(source_array(i,j))
+            call check_nonnegative(source_array(i,j))
         end do
     end do
     print*, "    Passed all checks"
