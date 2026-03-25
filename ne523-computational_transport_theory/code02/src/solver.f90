@@ -32,8 +32,8 @@ SUBROUTINE ddsolve(psi_x_in, psi_y_in, mu, eta, dx, dy, source, sigma_t, &
     real :: psi_x_in, psi_y_in, psi_x_out, psi_y_out, psi_center
     real :: mu, eta, dx, dy, source, sigma_t
 
-    psi_center = source + (2 * mu) / dx * psi_x_in + (2 * eta) / dy * psi_y_in
-    psi_center = psi_center / (sigma_t + (2 * mu) / dx + (2 * eta) / dy)
+    psi_center = source + (2 * abs(mu)) / dx * psi_x_in + (2 * abs(eta)) / dy * psi_y_in
+    psi_center = psi_center / (sigma_t + (2 * abs(mu)) / dx + (2 * abs(eta)) / dy)
 
     psi_x_out = 2 * psi_center - psi_x_in
     psi_y_out = 2 * psi_center - psi_y_in
