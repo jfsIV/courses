@@ -17,10 +17,10 @@ To recompile the code, run:
 Make sure you are in the project home directory. To execute the code, run:
 
 ```
-./sn_2d <input_file=sample.i>
+./sn_2d <input_file=sample.in>
 ```
 
-By default, `sn_2d` will execute using `sample.i`, but you can pass a different file name as a command line argument.
+By default, `sn_2d` will execute using `sample.in`, but you can pass a different file name as a command line argument.
 
 
 # Status
@@ -28,10 +28,10 @@ The code is operational
 
 
 # Description
-This code reads input files, makes sure the input file is properly formatted, and writes an output file for those variables.
+This code reads input files, makes sure the input file is properly formatted, and writes an output file for those variables. This code then uses the parsed input file information to solve for the scalar flux using the diamond difference method.
 
 ## Naming Input Files
-The expected input is a file named `*.i`. Every entry in the input file needs to be seperated by at least one space. However, The input file is read using free-format parsing, so line breaks do not affect input reading.
+The expected input is a file named `*.in`. Every entry in the input file needs to be seperated by at least one space. However, The input file is read using free-format parsing, so line breaks do not affect input reading.
 
 ## Input Syntax
 The expected input syntax is as follows:
@@ -47,4 +47,4 @@ The expected input syntax is as follows:
 10. An IxJ array where each entry is the source in each respective cell
 
 ## Limitations and Restrictions
-The code only reads input files and writes an output file, so no transport calculations are being performed. (yet...)
+This code only solves for fixed source problems and cannot perform eigenvalue calculations.

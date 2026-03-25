@@ -23,7 +23,7 @@ select case (arg_count)
         call get_command_argument(1, arg_value)
         input_file = trim(arg_value)
     case (0)
-        input_file = "sample.i"
+        input_file = "sample.in"
 end select
 
 
