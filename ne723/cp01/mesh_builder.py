@@ -25,10 +25,10 @@ def discretize_space(problem):
             n_region_cells = problem.n_mesh_cells[region_idx]
 
             region_dx = region_width / n_region_cells
-            dx_list.extend([local_dx] * n_region_cells)
+            dx_list.extend([region_dx] * n_region_cells)
 
             for cell_idx in range(1, n_region_cells + 1):
-                cell_edges_list.append(left_bound + cell_idx * local_dx)
+                cell_edges_list.append(left_bound + cell_idx * region_dx)
 
         dx = np.array(dx_list)
         cell_edges = np.array(cell_edges_list)

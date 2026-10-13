@@ -68,23 +68,6 @@ def save_results(results_dir, problem, mesh_dict, results_dict):
         inner_history, outer_history = save_history_results(results_dir, problem_name, results_dict, problem_type)
 
 
-    """
-    import plots
-
-    plots.generate_report_plots(
-        results_dir=results_dir,
-        problem=problem,
-        x_centers=x_centers,
-        phi_bar=phi_bar,
-        phi_hat=phi_hat,
-        cell_edges_x=cell_edges_x,
-        phi_edges=phi_edges,
-        j_edges=j_edges,
-        results_dict=results_dict,
-    )
-    """
-
-
 def save_cell_results(results_dir, problem_name, mesh_dict, results_dict):
     dx = mesh_dict["dx"]
     cell_edges = mesh_dict["cell_edges"]
