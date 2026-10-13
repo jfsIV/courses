@@ -31,7 +31,7 @@ def discretize_space(problem):
                 cell_edges_list.append(left_bound + cell_idx * local_dx)
 
         dx = np.array(dx_list)
-        cell_edges = np.array(x_edges_list)
+        cell_edges = np.array(cell_edges_list)
 
     n_problem_cells = len(dx)
     cell_centers = 0.5 * (cell_edges[:-1] + cell_edges[1:])
@@ -50,11 +50,11 @@ def discretize_space(problem):
             right_bound = problem.region_boundaries[region_idx + 1]
 
             if left_bound <= cell_center < right_bound:
-                sigma_t[region_idx] = problem.sigma_ts[region_idx]
-                sigma_s[region_idx] = problem.sigma_ss[region_idx]
-                sigma_f[region_idx] = problem.sigma_fs[region_idx]
-                nu_f[region_idx] = problem.nu_fs[region_idx]
-                q[region_idx] = problem.qs[region_idx]
+                sigma_t[cell_idx] = problem.sigma_ts[region_idx]
+                sigma_s[cell_idx] = problem.sigma_ss[region_idx]
+                sigma_f[cell_idx] = problem.sigma_fs[region_idx]
+                nu_f[cell_idx]    = problem.nu_fs[region_idx]
+                q[cell_idx]       = problem.qs[region_idx]
                 break
 
     mesh_dict = {
@@ -67,4 +67,4 @@ def discretize_space(problem):
         "q": q,
     }
 
-   return mesh_dict
+    return mesh_dict

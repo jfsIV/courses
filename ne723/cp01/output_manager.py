@@ -68,6 +68,7 @@ def save_results(results_dir, problem, mesh_dict, results_dict):
         inner_history, outer_history = save_history_results(results_dir, problem_name, results_dict, problem_type)
 
 
+    """
     import plots
 
     plots.generate_report_plots(
@@ -81,6 +82,7 @@ def save_results(results_dir, problem, mesh_dict, results_dict):
         j_edges=j_edges,
         results_dict=results_dict,
     )
+    """
 
 
 def save_cell_results(results_dir, problem_name, mesh_dict, results_dict):
@@ -116,14 +118,14 @@ def save_cell_results(results_dir, problem_name, mesh_dict, results_dict):
             phi_hat[cell_idx] = 0.5 * (phi_R[cell_idx] - phi_L[cell_idx])
 
             f.write(
-                f"{i:<8d}{x_centers[cell_idx]:<12.5f}{phi_bar[cell_idx]:<14.6e}{phi_hat[cell_idx]:<14.6e}"
+                f"{cell_idx:<8d}{cell_centers[cell_idx]:<12.5f}{phi_bar[cell_idx]:<14.6e}{phi_hat[cell_idx]:<14.6e}"
                 f"{dr_0[cell_idx]:<14.6e}{dr_1[cell_idx]:<14.6e}{dR_0[cell_idx]:<14.6e}{dR_1[cell_idx]:<14.6e}\n"
             )
 
     return cell_centers, phi_bar, phi_hat
 
 
-def save_edges_results(results_dir, problem_name, mesh_dict, results_dict):
+def save_edge_results(results_dir, problem_name, mesh_dict, results_dict):
     cell_edges = mesh_dict["cell_edges"]
     n_cells = len(mesh_dict["dx"])
 
@@ -155,7 +157,7 @@ def save_edges_results(results_dir, problem_name, mesh_dict, results_dict):
             phi_edges[cell_idx + 1] = 0.5 * (phi_R[cell_idx] + phi_L[cell_idx + 1])
             j_edges[cell_idx + 1] = 0.5 * (j_R[cell_idx] + j_L[cell_idx + 1])
             f.write(
-                f"{i+1:<12d}{cell_edges[cell_idx + 1]:<12.5f}{phi_edges[cell_idx +1]:<18.6e}{j_edges[cell_idx + 1]:<18.6e}\n"
+                f"{cell_idx+1:<12d}{cell_edges[cell_idx + 1]:<12.5f}{phi_edges[cell_idx +1]:<18.6e}{j_edges[cell_idx + 1]:<18.6e}\n"
             )
 
         # right edge

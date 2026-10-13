@@ -175,7 +175,7 @@ def angular_mesh_sweep(
                 a11 = 0.5 * mu + sigma_t_dx_over_3[cell_idx]
                 a12 = 0.5 * mu + sigma_t_dx_over_6[cell_idx]
                 a21 = -0.5 * mu + sigma_t_dx_over_6[cell_idx]
-                a22 = -0.5 * mu + sigma_t_dx_over_3[cell_idx]
+                a22 = 0.5 * mu + sigma_t_dx_over_3[cell_idx]
 
                 # sources + incoming flux
                 b1 = b_source_L[cell_idx] + mu * psi_incoming
@@ -207,7 +207,7 @@ def angular_mesh_sweep(
 
             for cell_idx in range(n_cells - 1, -1, -1):
                 # streaming w/o incoming flux + total loss
-                a11 = 0.5 * mu + sigma_t_dx_over_3[cell_idx]
+                a11 = -0.5 * mu + sigma_t_dx_over_3[cell_idx]
                 a12 = 0.5 * mu + sigma_t_dx_over_6[cell_idx]
                 a21 = -0.5 * mu + sigma_t_dx_over_6[cell_idx]
                 a22 = -0.5 * mu + sigma_t_dx_over_3[cell_idx]
@@ -269,13 +269,7 @@ def critical_width_solver(quad_dict, problem, file_obj=None):
         # use secant method
         a_next = a_1 - (k_1 - 1.0) * (a_1 - a_0) / (k_1 - k_0)
 
-        (
-            k_next, phi_L, phi_R, j_L, j_R, history, psi_0moment_matrix,
-            delta_r_0, delta_r_1, delta_R_0, delta_R_1,
-        )
-            = eigenvalue_inner_loop(
-            a_next, quad_dict, problem, file_obj
-        )
+        (k_next, phi_L, phi_R, j_L, j_R, history, psi_0moment_matrix, delta_r_0, delta_r_1, delta_R_0, delta_R_1,) = eigenvalue_inner_loop(a_next, quad_dict, problem, file_obj)
 
         outer_history.append({"iteration": outer_idx, "a_crit": a_next})
 

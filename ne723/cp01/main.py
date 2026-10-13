@@ -1,6 +1,6 @@
 # choose which problem by uncommenting the desired import
-import test_a as problem
-#import test_b as problem
+#import test_a as problem
+import test_b as problem
 #import test_c as problem
 
 # package imports
@@ -20,7 +20,7 @@ def main():
     start_time = time.time()
 
     # setting up results
-    results_dir = Path(f"{problem.problem_name}_results")
+    results_dir = Path(f"results-{problem.problem_name}")
     results_dir.mkdir(parents=True, exist_ok=True)
 
     log_filename = results_dir / f"{problem.problem_name}.log"
@@ -69,7 +69,7 @@ def main():
 
         # output results
         msg = "\n  Exporting results"
-        output_manager.log_msh(msg, log_file)
+        output_manager.log_msg(msg, log_file)
 
         output_manager.save_results(
             results_dir, problem, mesh_dict, results_dict
