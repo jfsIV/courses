@@ -58,7 +58,7 @@ def fixed_source_solver(mesh_dict, quad_dict, problem, k_eff=1.0, file_obj=None)
         b_source_L = (internal_source_diag * phi_L_prev + internal_source_off * phi_R_prev) + external_source
         b_source_R = (internal_source_off * phi_L_prev + internal_source_diag * phi_R_prev) + external_source
 
-        phi_L, phi_R, j_L, j_R, psi_left_reflective, psi_0moment_matrix = angular_mesh_sweep(
+        phi_L, phi_R, j_L, j_R, psi_left_reflective, psi_0moment_matrix, psi_1moment_matrix, psi_edge_matrix = angular_mesh_sweep(
             mesh_dict, quad_dict,
             sigma_t_dx_over_3, sigma_t_dx_over_6,
             b_source_L, b_source_R,
@@ -119,20 +119,31 @@ def fixed_source_solver(mesh_dict, quad_dict, problem, k_eff=1.0, file_obj=None)
 
         error_previous = error_current
 
+    phi_ie_edge = np.zeros(n_cells + 1)
+    j_ie_edge = np.zeros(n_cells + 1)
+    for edge_idx in range(n_cells + 1):
+        phi_ie_edge[edge_idx] = np.sum(quad_dict["w"] * psi_edge_matrix[:, edge_idx])
+        j_ie_edge[edge_idx] = np.sum(quad_dict["w"] * quad_dict["mu"] * psi_edge_matrix[:, edge_idx])
+
     results_dict = {
+        "cell_average_angular_flux": psi_0moment_matrix,
+        "cell_edge_angular_flux": psi_edge_matrix,
+        "first_legendre_moment_angular_flux": psi_1moment_matrix,
+        "cell_average_scalar_flux": 0.5 * (phi_R + phi_L),
+        "cell_edge_scalar_flux": phi_ie_edge,
+        "first_legendre_moment_scalar_flux": 0.5 * (phi_R - phi_L),
+        "cell_average_current": 0.5 * (j_R + j_L),
+        "cell_edge_current": j_ie_edge,
+        "first_legendre_moment_current": 0.5 * (j_R - j_L),
         "phi_L": phi_L,
         "phi_R": phi_R,
         "j_L": j_L,
         "j_R": j_R,
-        "psi_0moment_matrix": psi_0moment_matrix,
         "iteration_history": iteration_history,
-
         "delta_r_0": delta_r_0,
         "delta_r_1": delta_r_1,
         "delta_R_0": delta_R_0,
-        "delta_R_1": delta_R_1,
-    }
-
+        "delta_R_1": delta_R_1,}
     return results_dict
 
 
@@ -154,6 +165,8 @@ def angular_mesh_sweep(
     j_R_new = np.zeros(n_cells)
 
     psi_0moment_matrix = np.zeros((n_angles, n_cells))
+    psi_1moment_matrix = np.zeros((n_angles, n_cells))
+    psi_edge_matrix = np.zeros((n_angles, n_cells + 1))
 
     if psi_left_reflective is None:
         psi_left_reflective = np.zeros(n_angles)
@@ -169,6 +182,8 @@ def angular_mesh_sweep(
                 psi_incoming = psi_left_reflective[m_idx]
             if problem.left_bc == "vacuum":
                 psi_incoming = 0.0
+
+            psi_edge_matrix[m_idx, 0] = psi_incoming
 
             for cell_idx in range(n_cells):
                 # streaming w/o incoming flux + total loss
@@ -187,6 +202,8 @@ def angular_mesh_sweep(
                 psi_R = (a11 * b2 - a21 * b1) / det
 
                 psi_0moment_matrix[m_idx, cell_idx] = 0.5 * (psi_L + psi_R)
+                psi_1moment_matrix[m_idx, cell_idx] = 0.5 * (psi_R - psi_L)
+                psi_edge_matrix[m_idx, cell_idx + 1] = psi_R
 
                 # add flux contribution
                 phi_L_new[cell_idx] += w * psi_L
@@ -205,6 +222,8 @@ def angular_mesh_sweep(
             if problem.right_bc != "vacuum":
                 raise ValueError("Support for non-vacuum BC not added for right")
 
+            psi_edge_matrix[m_idx, n_cells] = psi_incoming
+
             for cell_idx in range(n_cells - 1, -1, -1):
                 # streaming w/o incoming flux + total loss
                 a11 = -0.5 * mu + sigma_t_dx_over_3[cell_idx]
@@ -222,6 +241,8 @@ def angular_mesh_sweep(
                 psi_R = (a11 * b2 - a21 * b1) / det
 
                 psi_0moment_matrix[m_idx, cell_idx] = 0.5 * (psi_L + psi_R)
+                psi_1moment_matrix[m_idx, cell_idx] = 0.5 * (psi_R - psi_L)
+                psi_edge_matrix[m_idx, cell_idx] = psi_L
 
                 # add flux contribution
                 phi_L_new[cell_idx] += w * psi_L
@@ -238,7 +259,7 @@ def angular_mesh_sweep(
 
             continue
 
-    return phi_L_new, phi_R_new, j_L_new, j_R_new, psi_left_reflective, psi_0moment_matrix
+    return phi_L_new, phi_R_new, j_L_new, j_R_new, psi_left_reflective, psi_0moment_matrix, psi_1moment_matrix, psi_edge_matrix
 
 
 def critical_width_solver(quad_dict, problem, file_obj=None):
@@ -248,11 +269,11 @@ def critical_width_solver(quad_dict, problem, file_obj=None):
     a_0 = problem.region_boundaries[-1]
     a_1 = a_0 * 1.15
 
-    k_0, _, _, _, _, _, _, _, _, _, _ = eigenvalue_inner_loop(a_0, quad_dict, problem, file_obj)
+    k_0, _, _, _, _, _, _, _, _, _, _, _, _ = eigenvalue_inner_loop(a_0, quad_dict, problem, file_obj)
     msg = f"Initial Guess 1: width = {a_0:.4f} cm; k_eff = {k_0:.6f}"
     output_manager.log_msg(msg, file_obj)
 
-    k_1, _, _, _, _, _, _, _, _, _, _ = eigenvalue_inner_loop(a_1, quad_dict, problem, file_obj)
+    k_1, _, _, _, _, _, _, _, _, _, _, _, _ = eigenvalue_inner_loop(a_1, quad_dict, problem, file_obj)
     msg = f"Initial Guess 2: width = {a_1:.4f} cm; k_eff = {k_1:.6f}"
     output_manager.log_msg(msg, file_obj)
 
@@ -260,16 +281,18 @@ def critical_width_solver(quad_dict, problem, file_obj=None):
     outer_idx = 0
     max_outer_iters = 50
 
-    phi_L, phi_R, j_L, j_R, history, psi_0moment_matrix = None, None, None, None, None, None
+    phi_L, phi_R, j_L, j_R, history = None, None, None, None, None
+    psi_0moment_matrix, psi_1moment_matrix, psi_edge_matrix = None, None, None
     delta_r_0, delta_r_1, delta_R_0, delta_R_1 = None, None, None, None
 
     while not outer_converged and outer_idx < max_outer_iters:
         outer_idx += 1
 
-        # use secant method
         a_next = a_1 - (k_1 - 1.0) * (a_1 - a_0) / (k_1 - k_0)
 
-        (k_next, phi_L, phi_R, j_L, j_R, history, psi_0moment_matrix, delta_r_0, delta_r_1, delta_R_0, delta_R_1,) = eigenvalue_inner_loop(a_next, quad_dict, problem, file_obj)
+        (k_next, phi_L, phi_R, j_L, j_R, history, 
+         psi_0moment_matrix, psi_1moment_matrix, psi_edge_matrix,
+         delta_r_0, delta_r_1, delta_R_0, delta_R_1) = eigenvalue_inner_loop(a_next, quad_dict, problem, file_obj)
 
         outer_history.append({"iteration": outer_idx, "a_crit": a_next})
 
@@ -286,16 +309,30 @@ def critical_width_solver(quad_dict, problem, file_obj=None):
         k_0 = k_1
         k_1 = k_next
 
+    n_cells = len(phi_L)
+    phi_ie_edge = np.zeros(n_cells + 1)
+    j_ie_edge = np.zeros(n_cells + 1)
+    for edge_idx in range(n_cells + 1):
+        phi_ie_edge[edge_idx] = np.sum(quad_dict["w"] * psi_edge_matrix[:, edge_idx])
+        j_ie_edge[edge_idx] = np.sum(quad_dict["w"] * quad_dict["mu"] * psi_edge_matrix[:, edge_idx])
+
     results_dict = {
         "critical_width": a_next,
+        "cell_average_angular_flux": psi_0moment_matrix,
+        "cell_edge_angular_flux": psi_edge_matrix,
+        "first_legendre_moment_angular_flux": psi_1moment_matrix,
+        "cell_average_scalar_flux": 0.5 * (phi_R + phi_L),
+        "cell_edge_scalar_flux": phi_ie_edge,
+        "first_legendre_moment_scalar_flux": 0.5 * (phi_R - phi_L),
+        "cell_average_current": 0.5 * (j_R + j_L),
+        "cell_edge_current": j_ie_edge,
+        "first_legendre_moment_current": 0.5 * (j_R - j_L),
         "phi_L": phi_L,
         "phi_R": phi_R,
         "j_L": j_L,
         "j_R": j_R,
-        "psi_0moment_matrix": psi_0moment_matrix,
         "inner_history": history,
         "outer_history": outer_history,
-
         "delta_r_0": delta_r_0,
         "delta_r_1": delta_r_1,
         "delta_R_0": delta_R_0,
@@ -332,7 +369,6 @@ def eigenvalue_inner_loop(width_guess, quad_dict, problem, file_obj=None):
     iteration_history = []
     error_phi_previous = 0
 
-    # residual placeholders
     delta_r_0, delta_r_1, delta_R_0, delta_R_1 = None, None, None, None
 
     psi_left_reflective = None
@@ -344,26 +380,20 @@ def eigenvalue_inner_loop(width_guess, quad_dict, problem, file_obj=None):
         phi_R_prev = phi_R.copy()
         phi_0moment_prev = 0.5 * (phi_L_prev + phi_R_prev)
 
-        # precompute static "matrices"
-        # streaming & BC terms are constants
-
-        # collision
         sigma_t_dx_over_3 = (1 / 3) * sigma_t * dx
         sigma_t_dx_over_6 = (1 / 6) * sigma_t * dx
 
-        # scattering and fission source
         production_coeff = sigma_s + (sigma_f * nu_f / k_current)
         internal_source_diag = (1 / 6) * production_coeff * dx
         internal_source_off = (1 / 12) * production_coeff * dx
 
-        # external source
         external_source = (1 / 4) * q * dx
 
-        # total right side
         b_source_L = (internal_source_diag * phi_L_prev + internal_source_off * phi_R_prev) + external_source
         b_source_R = (internal_source_off * phi_L_prev + internal_source_diag * phi_R_prev) + external_source
 
-        phi_L_new, phi_R_new, j_L, j_R, psi_left_reflective, psi_0moment_matrix = angular_mesh_sweep(
+        (phi_L_new, phi_R_new, j_L, j_R, psi_left_reflective, 
+         psi_0moment_matrix, psi_1moment_matrix, psi_edge_matrix) = angular_mesh_sweep(
             mesh_dict, quad_dict,
             sigma_t_dx_over_3, sigma_t_dx_over_6,
             b_source_L, b_source_R,
@@ -376,7 +406,6 @@ def eigenvalue_inner_loop(width_guess, quad_dict, problem, file_obj=None):
         denom = np.sum(sigma_f * nu_f * phi_0moment_prev * dx)
         k_next = k_current * (numer / denom)
 
-        # convergence criteria
         error_phi_L = np.max(np.abs(phi_L_new - phi_L_prev))
         error_phi_R = np.max(np.abs(phi_R_new - phi_R_prev))
         error_phi_current = max(error_phi_L, error_phi_R)
@@ -386,7 +415,6 @@ def eigenvalue_inner_loop(width_guess, quad_dict, problem, file_obj=None):
         converged_phi = False
         converged_k = False
 
-        # flux shape spectral radius check
         if iteration_idx >= 2 and error_phi_previous > 0:
             rho_phi = error_phi_current / error_phi_previous
             if 0 < rho_phi < 1:
@@ -394,7 +422,6 @@ def eigenvalue_inner_loop(width_guess, quad_dict, problem, file_obj=None):
                 if error_phi_current < threshold_phi:
                     converged_phi = True
 
-        # k-eigenvalue spectral radius check
         if iteration_idx >= 3:
             denom_k = abs(k_current - k_prev2)
             if denom_k > 0:
@@ -419,17 +446,13 @@ def eigenvalue_inner_loop(width_guess, quad_dict, problem, file_obj=None):
 
             production = sigma_s + (sigma_f * nu_f / k_next)
 
-            # scheme residual, particle balance (Eq. 8a)
             delta_r_0 = (j_R - j_L) + (sigma_t * phi_0moment_current * dx) - (production * phi_0moment_prev * dx) - q_0moment_integrated
 
-            # scheme residual, first moment (Eq. 8b)
             j_0moment = 0.5 * (j_L + j_R)
             delta_r_1 = 3.0 * (j_R + j_L - 2 * j_0moment) + (sigma_t * phi_1moment_current * dx) - (production * phi_1moment_prev * dx) - q_1moment_integrated
 
-            # iterative residual, particle palance (Eq. 9a)
             delta_R_0 = (j_R - j_L) + ((sigma_t - production) * phi_0moment_current * dx) - q_0moment_integrated
 
-            # iterative residual, first moment (Eq. 9b)
             delta_R_1 = 3.0 * (j_R + j_L - 2 * j_0moment) + ((sigma_t - production) * phi_1moment_current * dx) - q_1moment_integrated
 
         iteration_history.append({
@@ -445,10 +468,10 @@ def eigenvalue_inner_loop(width_guess, quad_dict, problem, file_obj=None):
         k_current = k_next
         phi_L, phi_R = phi_L_new, phi_R_new
 
-    # normalizing
     phi_0moment = 0.5 * (phi_L + phi_R)
     phi_integral = np.sum(phi_0moment * dx)
     phi_L /= phi_integral
     phi_R /= phi_integral
 
-    return k_current, phi_L, phi_R, j_L, j_R, iteration_history, psi_0moment_matrix, delta_r_0, delta_r_1, delta_R_0, delta_R_1
+    # Return the extra matrices up to the outer solver loop
+    return k_current, phi_L, phi_R, j_L, j_R, iteration_history, psi_0moment_matrix, psi_1moment_matrix, psi_edge_matrix, delta_r_0, delta_r_1, delta_R_0, delta_R_1

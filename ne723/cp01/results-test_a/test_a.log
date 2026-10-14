@@ -18,10 +18,10 @@ INITIALIZING SOLVER FOR 'test_a'
 Problem Setup Complete (Elapsed Time: 0.0071 seconds)
 
   Beginning Inner Source Iteration Solver
-  > Iteration 10    | Current Error: 3.3490e-02 | Elapsed Time: 0.015 s
-  > Iteration 20    | Current Error: 1.1713e-03 | Elapsed Time: 0.030 s
-  > Iteration 30    | Current Error: 4.1192e-05 | Elapsed Time: 0.045 s
-  > Iteration 40    | Current Error: 1.4490e-06 | Elapsed Time: 0.061 s
-Fixed source iterations complete (Elapsed Time: 0.0741 seconds)
+  > Iteration 10    | Current Error: 3.3490e-02 | Elapsed Time: 0.016 s
+  > Iteration 20    | Current Error: 1.1713e-03 | Elapsed Time: 0.031 s
+  > Iteration 30    | Current Error: 4.1192e-05 | Elapsed Time: 0.047 s
+  > Iteration 40    | Current Error: 1.4490e-06 | Elapsed Time: 0.062 s
+Fixed source iterations complete (Elapsed Time: 0.0765 seconds)
 
   Exporting results

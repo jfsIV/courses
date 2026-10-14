@@ -27,7 +27,8 @@ def generate_report_plots(results_dir):
 def plot_common_results(results_dir, plot_dir, problem_name):
     moments_file = results_dir / f"{problem_name}_cell_moments_and_residuals.txt"
     edges_file = results_dir / f"{problem_name}_cell_edge_flux_and_current.txt"
-    angular_file = results_dir / f"{problem_name}_angular_flux_matrix.txt"
+    angular_moments_file = results_dir / f"{problem_name}_angular_flux_moments.txt"
+    angular_edge_file = results_dir / f"{problem_name}_cell_edge_angular_flux.txt"
 
     if moments_file.exists():
         data = np.loadtxt(moments_file, skiprows=2)
@@ -35,10 +36,12 @@ def plot_common_results(results_dir, plot_dir, problem_name):
 
         plot_cell_average_flux(results_dir, plot_dir, problem_name, x_centers, data[:, 2])
         plot_spatial_moment_flux(results_dir, plot_dir, problem_name, x_centers, data[:, 3])
-        plot_residual_dr0(results_dir, plot_dir, problem_name, x_centers, data[:, 4])
-        plot_residual_dr1(results_dir, plot_dir, problem_name, x_centers, data[:, 5])
-        plot_residual_dR0(results_dir, plot_dir, problem_name, x_centers, data[:, 6])
-        plot_residual_dR1(results_dir, plot_dir, problem_name, x_centers, data[:, 7])
+        plot_cell_average_current(results_dir, plot_dir, problem_name, x_centers, data[:, 4])
+        plot_spatial_moment_current(results_dir, plot_dir, problem_name, x_centers, data[:, 5])
+        plot_residual_dr0(results_dir, plot_dir, problem_name, x_centers, data[:, 6])
+        plot_residual_dr1(results_dir, plot_dir, problem_name, x_centers, data[:, 7])
+        plot_residual_dR0(results_dir, plot_dir, problem_name, x_centers, data[:, 8])
+        plot_residual_dR1(results_dir, plot_dir, problem_name, x_centers, data[:, 9])
 
     if edges_file.exists():
         data = np.loadtxt(edges_file, skiprows=2)
@@ -46,9 +49,11 @@ def plot_common_results(results_dir, plot_dir, problem_name):
         plot_cell_edge_flux(results_dir, plot_dir, problem_name, x_edges, data[:, 2])
         plot_cell_edge_current(results_dir, plot_dir, problem_name, x_edges, data[:, 3])
 
-    if angular_file.exists():
-        plot_angular_flux_2d(results_dir, plot_dir, problem_name, angular_file)
-        plot_integrated_angular_flux(results_dir, plot_dir, problem_name, angular_file)
+    if angular_moments_file.exists():
+        plot_angular_moments_2d(results_dir, plot_dir, problem_name, angular_moments_file)
+
+    if angular_edge_file.exists():
+        plot_angular_edge_2d(results_dir, plot_dir, problem_name, angular_edge_file)
 
 
 def plot_cell_average_flux(results_dir, plot_dir, problem_name, x_centers, phi_bar):
@@ -70,6 +75,28 @@ def plot_spatial_moment_flux(results_dir, plot_dir, problem_name, x_centers, phi
     plt.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
     plt.savefig(plot_dir / f"{problem_name}_spatial_moment_flux.png", dpi=600)
+    plt.close()
+
+
+def plot_cell_average_current(results_dir, plot_dir, problem_name, x_centers, j_bar):
+    plt.figure(figsize=(7, 4.5))
+    plt.plot(x_centers, j_bar)
+    plt.xlabel("Position x [cm]")
+    plt.ylabel("Cell-Average Current, j_bar")
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.tight_layout()
+    plt.savefig(plot_dir / f"{problem_name}_cell_average_current.png", dpi=600)
+    plt.close()
+
+
+def plot_spatial_moment_current(results_dir, plot_dir, problem_name, x_centers, j_hat):
+    plt.figure(figsize=(7, 4.5))
+    plt.plot(x_centers, j_hat)
+    plt.xlabel("Position x [cm]")
+    plt.ylabel("First Spatial Moment of Current, j_hat")
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.tight_layout()
+    plt.savefig(plot_dir / f"{problem_name}_spatial_moment_current.png", dpi=600)
     plt.close()
 
 
@@ -139,59 +166,77 @@ def plot_cell_edge_current(results_dir, plot_dir, problem_name, x_edges, j_edges
     plt.close()
 
 
-def plot_angular_flux_2d(results_dir, plot_dir, problem_name, angular_file_path):
-    with open(angular_file_path, 'r') as f:
+def plot_angular_moments_2d(results_dir, plot_dir, problem_name, file_path):
+    with open(file_path, 'r') as f:
         lines = f.readlines()
 
     pos_line = lines[2].strip()
     cell_segments = [x.strip() for x in pos_line.split('|')[1:] if x.strip() and '=' in x]
     cell_positions = [float(x.split('=')[1].strip()) for x in cell_segments]
 
-    matrix_data = []
+    matrix_data_bar = []
+    matrix_data_hat = []
     for line in lines[4:]:
         if "Angle" in line:
             parts = line.split()
-            matrix_data.append([float(val) for val in parts[2:]])
+            vals_bar = [float(p.split('/')[0]) for p in parts[2:]]
+            vals_hat = [float(p.split('/')[1]) for p in parts[2:]]
+            matrix_data_bar.append(vals_bar)
+            matrix_data_hat.append(vals_hat)
 
-    psi_matrix = np.array(matrix_data)
-    n_angles = psi_matrix.shape[0]
+    psi_bar = np.array(matrix_data_bar)
+    psi_hat = np.array(matrix_data_hat)
+    n_angles = psi_bar.shape[0]
     mu, _ = np.polynomial.legendre.leggauss(n_angles)
 
-    plt.figure(figsize=(8, 4.5))
     X, Y = np.meshgrid(cell_positions, mu)
-    plt.pcolormesh(X, Y, psi_matrix, cmap='viridis', shading='nearest')
-    plt.colorbar().set_label("Angular Flux, psi")
+
+    plt.figure(figsize=(8, 4.5))
+    plt.pcolormesh(X, Y, psi_bar, cmap='viridis', shading='nearest')
+    plt.colorbar().set_label("Cell-Average Angular Flux, psi_bar")
     plt.xlabel("Position, x [cm]")
     plt.ylabel("Angle, mu")
     plt.tight_layout()
-    plt.savefig(plot_dir / f"{problem_name}_angular_flux_2d.png", dpi=600)
+    plt.savefig(plot_dir / f"{problem_name}_angular_flux_average_2d.png", dpi=600)
+    plt.close()
+
+    plt.figure(figsize=(8, 4.5))
+    plt.pcolormesh(X, Y, psi_hat, cmap='coolwarm', shading='nearest')
+    plt.colorbar().set_label("First Spatial Moment Angular Flux, psi_hat")
+    plt.xlabel("Position, x [cm]")
+    plt.ylabel("Angle, mu")
+    plt.tight_layout()
+    plt.savefig(plot_dir / f"{problem_name}_angular_flux_moment_2d.png", dpi=600)
     plt.close()
 
 
-def plot_integrated_angular_flux(results_dir, plot_dir, problem_name, angular_file_path):
-    with open(angular_file_path, 'r') as f:
+def plot_angular_edge_2d(results_dir, plot_dir, problem_name, file_path):
+    with open(file_path, 'r') as f:
         lines = f.readlines()
 
-    pos_line = lines[2].strip()
-    cell_segments = [x.strip() for x in pos_line.split('|')[1:] if x.strip() and '=' in x]
-    cell_positions = [float(x.split('=')[1].strip()) for x in cell_segments]
+    pos_line = lines[1].strip()
+    edge_segments = [x.strip() for x in pos_line.split('|')[1:] if x.strip() and '=' in x]
+    edge_positions = [float(x.split('=')[1].strip()) for x in edge_segments]
 
     matrix_data = []
-    for line in lines[4:]:
+    for line in lines[3:]:
         if "Angle" in line:
             parts = line.split()
             matrix_data.append([float(val) for val in parts[2:]])
 
-    psi_matrix = np.array(matrix_data)
-    integrated_psi = np.sum(psi_matrix, axis=0)
+    psi_edge = np.array(matrix_data)
+    n_angles = psi_edge.shape[0]
+    mu, _ = np.polynomial.legendre.leggauss(n_angles)
 
-    plt.figure(figsize=(7, 4.5))
-    plt.plot(cell_positions, integrated_psi)
-    plt.xlabel("Position, x [cm]")
-    plt.ylabel("Total Angular Flux (sum over angles)")
-    plt.grid(True, linestyle='--', alpha=0.6)
+    X, Y = np.meshgrid(edge_positions, mu)
+
+    plt.figure(figsize=(8, 4.5))
+    plt.pcolormesh(X, Y, psi_edge, cmap='viridis', shading='nearest')
+    plt.colorbar().set_label("Cell-Edge Angular Flux, psi_edge")
+    plt.xlabel("Interface Position, x [cm]")
+    plt.ylabel("Angle, mu")
     plt.tight_layout()
-    plt.savefig(plot_dir / f"{problem_name}_cumulative_angular_flux.png", dpi=600)
+    plt.savefig(plot_dir / f"{problem_name}_cell_edge_angular_flux_2d.png", dpi=600)
     plt.close()
 
 

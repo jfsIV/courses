@@ -48,147 +48,132 @@ def print_problem_setup(problem, file_obj=None):
 
 
 def save_results(results_dir, problem, mesh_dict, results_dict):
-    """ save all results """
     problem_name = problem.problem_name
     problem_type = problem.problem_type
 
-    cell_centers, phi_bar, phi_hat = save_cell_results(
-        results_dir, problem_name, mesh_dict, results_dict
-    )
-    cell_edges, phi_edges, j_edges = save_edge_results(
-        results_dir, problem_name, mesh_dict, results_dict
-    )
+    save_cell_centered_moments_and_residuals(results_dir, problem_name, mesh_dict, results_dict)
+    save_cell_edge_flux_and_current(results_dir, problem_name, mesh_dict, results_dict)
+    save_angular_flux_moments(results_dir, problem_name, mesh_dict, results_dict)
+    save_cell_edge_angular_flux(results_dir, problem_name, mesh_dict, results_dict)
 
-    psi_matrix = save_angular_flux_results(results_dir, problem_name, mesh_dict, results_dict)
-
-    if problem_type == "fixed_source":
-        history = save_history_results(results_dir, problem_name, results_dict, problem_type)
-
-    if problem_type == "k-eigenvalue":
-        inner_history, outer_history = save_history_results(results_dir, problem_name, results_dict, problem_type)
+    save_history_results(results_dir, problem_name, results_dict, problem_type)
 
 
-def save_cell_results(results_dir, problem_name, mesh_dict, results_dict):
+def save_cell_centered_moments_and_residuals(results_dir, problem_name, mesh_dict, results_dict):
     dx = mesh_dict["dx"]
     cell_edges = mesh_dict["cell_edges"]
     n_cells = len(dx)
 
-    phi_L = results_dict["phi_L"]
-    phi_R = results_dict["phi_R"]
+    phi_bar = results_dict["cell_average_scalar_flux"]
+    phi_hat = results_dict["first_legendre_moment_scalar_flux"]
+    j_bar = results_dict["cell_average_current"]
+    j_hat = results_dict["first_legendre_moment_current"]
     dr_0 = results_dict["delta_r_0"]
     dr_1 = results_dict["delta_r_1"]
     dR_0 = results_dict["delta_R_0"]
     dR_1 = results_dict["delta_R_1"]
 
-    cell_centers = np.zeros(n_cells)
-    phi_bar = np.zeros(n_cells)
-    phi_hat = np.zeros(n_cells)
-
     out_file = results_dir / f"{problem_name}_cell_moments_and_residuals.txt"
     with open(out_file, "w") as f:
         f.write(f"CELL CENTERED MOMENTS AND RESIDUALS for {problem_name}\n")
-
         f.write(
-            f"{'Cell idx':<8s}{'x_i (cm)':<12s}"
+            f"{'Cell idx':<10s}{'x_i (cm)':<12s}"
             f"{'phi_bar_i':<14s}{'phi_hat_i':<14s}"
+            f"{'j_bar_i':<14s}{'j_hat_i':<14s}"
             f"{'dr_0':<14s}{'dr_1':<14s}"
             f"{'dR_0':<14s}{'dR_1':<14s}\n"
         )
 
         for cell_idx in range(n_cells):
-            cell_centers[cell_idx] = cell_edges[cell_idx] + 0.5 * dx[cell_idx]
-            phi_bar[cell_idx] = 0.5 * (phi_R[cell_idx] + phi_L[cell_idx])
-            phi_hat[cell_idx] = 0.5 * (phi_R[cell_idx] - phi_L[cell_idx])
-
+            cell_center = cell_edges[cell_idx] + 0.5 * dx[cell_idx]
             f.write(
-                f"{cell_idx:<8d}{cell_centers[cell_idx]:<12.5f}{phi_bar[cell_idx]:<14.6e}{phi_hat[cell_idx]:<14.6e}"
-                f"{dr_0[cell_idx]:<14.6e}{dr_1[cell_idx]:<14.6e}{dR_0[cell_idx]:<14.6e}{dR_1[cell_idx]:<14.6e}\n"
+                f"{cell_idx:<10d}{cell_center:<12.5f}"
+                f"{phi_bar[cell_idx]:<14.6e}{phi_hat[cell_idx]:<14.6e}"
+                f"{j_bar[cell_idx]:<14.6e}{j_hat[cell_idx]:<14.6e}"
+                f"{dr_0[cell_idx]:<14.6e}{dr_1[cell_idx]:<14.6e}"
+                f"{dR_0[cell_idx]:<14.6e}{dR_1[cell_idx]:<14.6e}\n"
             )
 
-    return cell_centers, phi_bar, phi_hat
 
-
-def save_edge_results(results_dir, problem_name, mesh_dict, results_dict):
+def save_cell_edge_flux_and_current(results_dir, problem_name, mesh_dict, results_dict):
     cell_edges = mesh_dict["cell_edges"]
     n_cells = len(mesh_dict["dx"])
 
-    phi_L = results_dict["phi_L"]
-    phi_R = results_dict["phi_R"]
-    j_L = results_dict["j_L"]
-    j_R = results_dict["j_R"]
-
-    phi_edges = np.zeros(n_cells + 1)
-    j_edges = np.zeros(n_cells + 1)
+    phi_edges = results_dict["cell_edge_scalar_flux"]
+    j_edges = results_dict["cell_edge_current"]
 
     out_file = results_dir / f"{problem_name}_cell_edge_flux_and_current.txt"
     with open(out_file, "w") as f:
-        f.write(f"CELL EDGE INTERFACE QUANTITIES for {problem_name}\n")
+        f.write(f"CELL EDGE QUANTITIES for {problem_name}\n")
         f.write(
-            f"{'Edge idx':<12s}{'x_i+1/2 (cm)':<12s}"
-            f"{'phi_edge':<18s}{'j_edge':<18s}\n"
+            f"{'Edge idx':<12s}{'x_i+1/2 (cm)':<15s}"
+            f"{'phi_edge':<20s}{'j_edge':<20s}\n"
         )
 
-        # left edge
-        phi_edges[0] = phi_L[0]
-        j_edges[0] = j_L[0]
-        f.write(
-            f"{0:<12d}{cell_edges[0]:<12.5f}{phi_edges[0]:<18.6e}{j_edges[0]:<18.6e}\n"
-        )
-
-        # internal
-        for cell_idx in range(n_cells - 1):
-            phi_edges[cell_idx + 1] = 0.5 * (phi_R[cell_idx] + phi_L[cell_idx + 1])
-            j_edges[cell_idx + 1] = 0.5 * (j_R[cell_idx] + j_L[cell_idx + 1])
+        for edge_idx in range(n_cells + 1):
             f.write(
-                f"{cell_idx+1:<12d}{cell_edges[cell_idx + 1]:<12.5f}{phi_edges[cell_idx +1]:<18.6e}{j_edges[cell_idx + 1]:<18.6e}\n"
+                f"{edge_idx:<12d}{cell_edges[edge_idx]:<15.5f}"
+                f"{phi_edges[edge_idx]:<20.6e}{j_edges[edge_idx]:<20.6e}\n"
             )
 
-        # right edge
-        phi_edges[-1] = phi_R[-1]
-        j_edges[-1] = j_R[-1]
-        f.write(
-            f"{n_cells:<12d}{cell_edges[-1]:<12.5f}{phi_edges[-1]:<18.6e}{j_edges[-1]:<18.6e}\n"
-        )
 
-    return cell_edges, phi_edges, j_edges
-
-
-def save_angular_flux_results(results_dir, problem_name, mesh_dict, results_dict):
+def save_angular_flux_moments(results_dir, problem_name, mesh_dict, results_dict):
     dx = mesh_dict["dx"]
     cell_edges = mesh_dict["cell_edges"]
     n_cells = len(dx)
 
-    psi_matrix = results_dict["psi_0moment_matrix"]
-    n_angles = psi_matrix.shape[0]
+    psi_0moment = results_dict["cell_average_angular_flux"]
+    psi_1moment = results_dict["first_legendre_moment_angular_flux"]
+    n_angles = psi_0moment.shape[0]
 
-    out_file = results_dir / f"{problem_name}_angular_flux_matrix.txt"
+    out_file = results_dir / f"{problem_name}_angular_flux_moments.txt"
     with open(out_file, "w") as f:
-        f.write(f"2D CELL-AVERAGE ANGULAR FLUX MATRIX psi_bar(x_i, mu_m) for {problem_name}\n")
-        f.write(f"Rows: Angle indices (angle_idx) | Columns: Cell indices (cell_idx)\n")
-
+        f.write(f"2D ANGULAR FLUX MOMENTS FOR {problem_name}\n")
+        f.write(f"Format for each entry: psi_bar / psi_hat\n")
         f.write(f"{'Angle idx':<12s}")
         for cell_idx in range(n_cells):
             x_i = cell_edges[cell_idx] + 0.5 * dx[cell_idx]
-            f.write(f"| x={x_i:.3f}  ")
-        f.write("\n" + "-" * 100 + "\n")
+            f.write(f"| x={x_i:.3f}          ")
+        f.write("\n" + "-" * (14 + 22 * n_cells) + "\n")
 
         for angle_idx in range(n_angles):
             f.write(f"Angle {angle_idx:<6d}")
             for cell_idx in range(n_cells):
-                f.write(f"  {psi_matrix[angle_idx, cell_idx]:.4e}")
+                val_bar = psi_0moment[angle_idx, cell_idx]
+                val_hat = psi_1moment[angle_idx, cell_idx]
+                f.write(f"  {val_bar:.3e}/{val_hat:+.3e}")
             f.write("\n")
 
-    return psi_matrix
+
+def save_cell_edge_angular_flux(results_dir, problem_name, mesh_dict, results_dict):
+    cell_edges = mesh_dict["cell_edges"]
+    n_cells = len(mesh_dict["dx"])
+
+    psi_edge = results_dict["cell_edge_angular_flux"]
+    n_angles = psi_edge.shape[0]
+
+    out_file = results_dir / f"{problem_name}_cell_edge_angular_flux.txt"
+    with open(out_file, "w") as f:
+        f.write(f"2D CELL EDGE ANGULAR FLUX INTERFACES FOR {problem_name}\n")
+        f.write(f"{'Angle idx':<12s}")
+        for edge_idx in range(n_cells + 1):
+            f.write(f"| x_e={cell_edges[edge_idx]:.3f}    ")
+        f.write("\n" + "-" * (14 + 18 * (n_cells + 1)) + "\n")
+
+        for angle_idx in range(n_angles):
+            f.write(f"Angle {angle_idx:<6d}")
+            for edge_idx in range(n_cells + 1):
+                f.write(f"  {psi_edge[angle_idx, edge_idx]:.4e}")
+            f.write("\n")
 
 
 def save_history_results(results_dir, problem_name, results_dict, problem_type):
-    """Saves the step-by-step solver tracking convergence history log fields."""
     out_file = results_dir / f"{problem_name}_convergence_history.txt"
 
     with open(out_file, "w") as f:
         if problem_type == "fixed_source":
             history = results_dict["iteration_history"]
-            f.write(f"INNER ITERATION CONVERGENCE HISTORY LOG for {problem_name}\n")
+            f.write(f"INNER ITERATION CONVERGENCE HISTORY for {problem_name}\n")
             f.write(f"Total Source Iterations (N_iter) completed: {len(history)}\n")
             f.write(f"{'Iteration idx':<15s}{'Max-Norm Error':<25s}{'Spectral Radius (rho)':<25s}\n")
 
@@ -197,8 +182,6 @@ def save_history_results(results_dir, problem_name, results_dict, problem_type):
                 rho_val = row_data["rho"]
                 rho_str = f"{rho_val:.5f}" if rho_val is not None else "None"
                 f.write(f"{row_data['iteration']:<15d}{row_data['error']:<25.5e}{rho_str:<25s}\n")
-
-            return history
 
         if problem_type == "k-eigenvalue":
             inner_history = results_dict["inner_history"]
@@ -223,5 +206,3 @@ def save_history_results(results_dir, problem_name, results_dict, problem_type):
                     f"{inner_row['error_k']:<20.5e}"
                     f"{inner_row['k_eff']:<18.6f}\n"
                 )
-
-            return inner_history, outer_history

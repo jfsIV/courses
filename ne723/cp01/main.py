@@ -1,7 +1,7 @@
 # choose which problem by uncommenting the desired import
-#import test_a as problem
+import test_a as problem
 #import test_b as problem
-import test_c as problem
+#import test_c as problem
 
 # !!! you can switch the mode of this file to run the plotting feature !!!
 
@@ -34,8 +34,8 @@ def main():
     start_time = time.time()
 
     # execution mode settings
-    #mode = "calc"  # do calculation by default
-    mode = "plot"  # do plotting by default
+    mode = "calc"  # do calculation by default
+    #mode = "plot"  # do plotting by default
 
     # check the command line arguments
     if len(sys.argv) > 1:

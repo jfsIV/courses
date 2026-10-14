@@ -1,4 +1,4 @@
-INNER ITERATION CONVERGENCE HISTORY LOG for test_a
+INNER ITERATION CONVERGENCE HISTORY for test_a
 Total Source Iterations (N_iter) completed: 44
 Iteration idx  Max-Norm Error           Spectral Radius (rho)    
 1              1.03190e+00              None                     
