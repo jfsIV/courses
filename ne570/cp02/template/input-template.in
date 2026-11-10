@@ -11,7 +11,6 @@ Photon Build-Up Factor Problem
 4     sx  25.0 2.0
  
 mode  p
-nps   1.0e+08
 sdef  erg=SOURCE_ENERGY  x=-5.0  y=0.0  z=0.0  par=2
 f14:p 3    $ ICRP-26 Photon Air Dose Response Function (Rad/hr/cm2-s)
 de14  0.01 0.015 0.02 0.03 0.04 0.05 0.06 0.08 0.1 0.15 0.2 0.3 0.4
@@ -20,7 +19,7 @@ df14  2.78e-6 1.11e-6 5.88e-7 2.56e-7 1.56e-7 1.2e-7 1.11e-7
       1.2e-7 1.47e-7 2.38e-7 3.45e-7 5.56e-7 7.69e-7 9.09e-7
       1.14e-6 1.47e-6 1.79e-6 2.44e-6 3.03e-6 4.0e-6 4.76e-6
       5.56e-6 6.25e-6 7.69e-6 9.09e-6
-e14   0.01 SCATTERING_ENERGY 10.0
+e14   0.01  SCATTERING_ENERGY  10.0
 f24:p 3    $ DS02 Photon Tissue Dose Response Function (Rad/hr/cm2-s)
 de24  0.01 0.015 0.02 0.03 0.04 0.05 0.06 0.08 0.1 0.15 0.2 0.3 0.4
       0.5 0.6 0.8 1.0 1.25 1.5 2.0 3.0 4.0 5.0 6.0 8.0 10.0 15.0 20.0
@@ -29,6 +28,8 @@ df24  2.61e-06 1.09e-06 5.90e-07 2.53e-07 1.52e-07 1.17e-07 1.07e-07
       1.13e-06 1.47e-06 1.77e-06 2.12e-06 2.43e-06 2.98e-06 3.92e-06
       4.72e-06 5.47e-06 6.16e-06 7.52e-06 8.89e-06 1.22e-05 1.56e-05 
 e24   0.01 SCATTERING_ENERGY 10.0
+TF14  1  5J  2
+STOP  nps=1e10  F14=0.05
 m1    7014    0.0000425     $ Air at STP
       8016    0.0000113
 m2    82000   0.032965307   $ Lead Shield

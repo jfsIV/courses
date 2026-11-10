@@ -43,7 +43,7 @@ lead_mu_dict = {  # taken from problem statements slides
 # functions
 def update_mcnp_input(
     case_path, replacements,
-    template_name="template.in"
+    template_name="input-template.in"
 ):
     input_file = case_path / template_name
 
@@ -57,7 +57,7 @@ def update_mcnp_input(
 
 def update_run_script(
     case_path, replacements,
-    template_name="run-script-template.sh"
+    template_name="run-template.py"
 ):
     run_script_file = case_path / template_name
 
@@ -71,7 +71,7 @@ def update_run_script(
         content = content.replace(placeholder, value)
 
     run_script_file.write_text(content)
-    run_script_file.rename(case_path / "run_me.sh")
+    run_script_file.rename(case_path / "run_me.py")
 
 
 def create_case(
@@ -88,12 +88,14 @@ def create_case(
 
     if output_path.exists():
         msg = f"Directory `{output_path}` already exists. Overwrite? [y]: "
+        """
         response = input(msg)
         response = response.strip().lower()
 
         if response not in ["y", "yes"]:
             print(f"XXX Skipping case `{case_name}` XXX")
             return
+        """
 
         shutil.rmtree(output_path)
 
@@ -119,6 +121,7 @@ def create_case(
 
 
 # running
-for energy in source_energies[:0]:
-    for thickness in optical_thicknesses[:0]:
-        create_case(energy, thickness)
+if __name__ == "__main__":
+    for energy in source_energies:
+        for thickness in optical_thicknesses:
+            create_case(energy, thickness)
