@@ -1,2 +1,5 @@
 *__pycache__*
 ne723/*/*results*
+*.ipynb_checkpoints*
+*.h5
+*outp
