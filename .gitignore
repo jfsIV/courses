@@ -3,3 +3,4 @@ ne723/*/*results*
 *.ipynb_checkpoints*
 *.h5
 *outp
+*srctp*
