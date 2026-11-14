@@ -7,8 +7,8 @@ from input_files import test_a as problem
 
 
 # !!! you can switch the mode of this file to run the plotting feature !!!
-execution_mode = "calc"
-#execution_mode = "plot"
+#execution_mode = "calc"
+execution_mode = "plot"
 
 # CALCULATION MODE (calc)
 #  - calc mode is the default mode
@@ -52,7 +52,7 @@ def main():
             msg = f"Directory '{results_dir}' does not exist! Run the current case in `calc` mode before executing `plot` mode."
             raise FileNotFoundError(msg)
 
-        print(f"\n    Overwriting plots in existing results dir '{results_dir}'")
+        print(f"\n    Overwriting existing plots in results dir '{results_dir}'")
         plots.generate_report_plots(results_dir)
         print(f"\n `PLOT` Execution of `{problem.problem_name}` Complete !!!")
         return

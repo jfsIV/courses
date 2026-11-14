@@ -4,33 +4,114 @@ from scipy.linalg import solve_banded
 
 def qd_solver(problem, mesh_dict, quad_dict, log_file):
     epsilon = problem.convergence_criteria
-
     n_cells = mesh_dict["n_cells"]
-    cell_edges = mesh_dict["cell_edges"]
-    cell_widths = mesh_dict["cell_widths"]
-    cell_centers = mesh_dict["cell_centers"]
-    sigma_t = mesh_dict["sigma_t"]
-    sigma_s = mesh_dict["sigma_s"]
-    sigma_f = mesh_dict["sigma_f"]
-    q = mesh_dict["q"]
 
-    # initial guesses
-    phi_cell_averaged = np.ones(n_cells)
+    mu = quad_dict["mu"]
+    w  = quad_dict["w"]
 
-    rhos = np.array([1/2, 1/2])
-    qd_factor = 1/3
-    cl = -1/2
-    cr = 1/2
+    pos_mask = mu > 0
+    neg_mask = mu < 0
 
+    # convergence history
     converged = False
 
+    l_inf_history = []
+    rho_history = [0.5, 0.5]
+
+    # initial guesses (for s=0)
+    phi_prev = np.ones(n_cells)
+    phi_lld = np.ones((n_cells, 2))
+    phi_error_prev = None
+
+    E_avg = np.full(n_cells, 1.0 / 3.0)
+    E_edge = np.full(n_cells + 1, 1.0 / 3.0)
+    C_L = -1/2
+    C_R = 1/2
+
+    s = 0
     while not converged:
         s += 1
 
         if s > 1:
-            # perform mesh sweep
-            continue
-    return
+            # high-order LLD mesh sweep
+            psi_avg, psi_edge = angular_mesh_sweep(problem, mesh_dict, quad_dict, phi_lld)
+
+            # QD factors
+            E_avg  = np.sum((mu[:, None] ** 2) * psi_avg * w[:, None], axis=0) / np.sum(psi_avg * w[:, None], axis=0)
+            E_edge = np.sum((mu[:, None] ** 2) * psi_edge * w[:, None], axis=0) / np.sum(psi_edge * w[:, None], axis=0)
+
+            # boundary factors
+            C_L = np.sum(mu[neg_mask] * psi_edge[neg_mask, 0] * w[neg_mask]) / np.sum(psi_edge[neg_mask, 0] * w[neg_mask])
+            C_R = np.sum(mu[pos_mask] * psi_edge[pos_mask, -1] * w[pos_mask]) / np.sum(psi_edge[pos_mask, -1] * w[pos_mask])
+
+        # solve LOQD problem
+        phi_avg, phi_edge, J_edge = fv_loqd_solver(
+            problem, mesh_dict, quad_dict,
+            E_avg, E_edge, C_L, C_R,
+        )
+
+        # apply discrete prolongation operator R_h for cell-edge, LLD-space phi
+        phi_lld = np.zeros((n_cells, 2))
+        phi_lld[:, 0] = 0.5 * phi_edge[:-1] + phi_avg - 0.5 * phi_edge[1:] # left
+        phi_lld[:, 1] = -0.5 * phi_edge[:-1] + phi_avg + 0.5 * phi_edge[1:] # right
+
+        # convergence checks
+        l_inf = np.max(np.abs(phi_avg - phi_prev))
+        l_inf_history.append(l_inf)
+
+        if s > 2 and phi_error_prev > 0.0:
+            rho = l_inf / phi_error_prev
+            rho_history.append(rho)
+        else:
+            rho = rho_history[s - 1]
+
+        msg = f"Iter {s:3d} | L_inf = {l_inf:.6e} | rho = {rho:.6f}\n"
+        log_file.write(msg)
+
+        if s >= 2:
+            tolerence_criteria = epsilon * (1.0 / rho - 1.0)
+
+            if l_inf <= tolerence_criteria:
+                converged = True
+
+        # update for next iteration
+        phi_error_prev = l_inf
+        phi_prev = phi_avg.copy()
+
+    # sweep with converged values
+    psi_avg, psi_edge = angular_mesh_sweep(problem, mesh_dict, quad_dict, phi_lld)
+    E_avg, E_edge, C_L, C_R = compute_qd_factors(quad_dict, psi_avg, psi_edge)
+
+    # transport metrics
+    M_E = np.abs(1.0 / 3.0 - E_avg)
+    M_E_prime = np.abs((E_edge[1:] - E_edge[:-1]) / mesh_dict["cell_widths"])
+
+    results_dict = {
+        # discretization variables
+        "cell_centers": mesh_dict["cell_centers"],
+        "cell_edges": mesh_dict["cell_edges"],
+        "cell_widths": mesh_dict["cell_widths"],
+        "mu": quad_dict["mu"],
+        # solution grid functions
+        "psi_avg": psi_avg,
+        "phi_avg": phi_avg,
+        "phi_edge": phi_edge,
+        "J_edge": J_edge,
+        # QD closure and boundary factors
+        "E_avg": E_avg,
+        "E_edge": E_edge,
+        "C_L": C_L,
+        "C_R": C_R,
+        # transport metrics
+        "M_E": M_E,
+        "M_E_prime": M_E_prime,
+        # convergence
+        "l_inf_history": np.array(l_inf_history),
+        "rho_history": np.array(rho_history),
+        "n_iterations": s,
+    }
+
+    return results_dict
 
 
 def angular_mesh_sweep(problem, mesh_dict, quad_dict, phi_lld_prev):
@@ -205,3 +286,24 @@ def fv_loqd_solver(problem, mesh_dict, quad_dict, E_avg, E_edge, C_L, C_R):
     J_edge[-1]   = (C_R * E_avg[-1] * phi_avg[-1] + E_edge[-1] * (J_in_neg - C_R * phi_in_neg)) / denom_R
 
     return phi_avg, phi_edge, J_edge
+
+
+def compute_qd_factors(quad_dict, psi_avg, psi_edge):
+    mu = quad_dict["mu"]
+    w  = quad_dict["w"]
+
+    pos_mask = mu > 0
+    neg_mask = mu < 0
+
+    w_col  = w[:, None]
+    mu_col = mu[:, None]
+
+    # QD factors
+    E_avg  = np.sum((mu_col ** 2) * psi_avg * w_col, axis=0) / np.sum(psi_avg * w_col, axis=0)
+    E_edge = np.sum((mu_col ** 2) * psi_edge * w_col, axis=0) / np.sum(psi_edge * w_col, axis=0)
+
+    # boundary factors
+    C_L = np.sum(mu[neg_mask] * psi_edge[neg_mask, 0] * w[neg_mask]) / np.sum(psi_edge[neg_mask, 0] * w[neg_mask])
+    C_R = np.sum(mu[pos_mask] * psi_edge[pos_mask, -1] * w[pos_mask]) / np.sum(psi_edge[pos_mask, -1] * w[pos_mask])
+
+    return E_avg, E_edge, C_L, C_R

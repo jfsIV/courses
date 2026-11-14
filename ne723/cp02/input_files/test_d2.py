@@ -1,4 +1,4 @@
-problem_name = "test_d1"
+problem_name = "test_d2"
 
 # calcs
 nu = 1e-4

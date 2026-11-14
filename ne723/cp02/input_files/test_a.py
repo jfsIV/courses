@@ -1,9 +1,9 @@
 problem_name = "test_a"
 
 region_boundaries = [0, 1, 11]
-sigma_ts = [  2,   0]
-sigma_ss = [100, 100]
-sigma_fs = [  0,   0]
+sigma_ts = [2, 100]
+sigma_ss = [0, 100]
+sigma_fs = [0,   0]
 qs = [0, 0]
 
 left_bc = "incident"
